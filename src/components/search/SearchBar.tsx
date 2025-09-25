@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-// Se hai già il PlayerContext con usePlayer:
-import { usePlayer } from "@/src/hooks/PlayerContext";
-// Se l'alias "@/src" non funziona, sostituisci con un import relativo: ../../hooks/PlayerContext
+import type { Track } from "@/types/track"; // usa il tuo tipo Track
 
 type SearchItem = {
   id: string;
@@ -14,6 +12,10 @@ type SearchItem = {
   source: "jamendo";
 };
 
+type Props = {
+  onPlay: (t: Track) => void; // 👈 lo decidiamo in page.tsx
+};
+
 function useDebounced<T>(value: T, delay = 350) {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -23,12 +25,11 @@ function useDebounced<T>(value: T, delay = 350) {
   return v;
 }
 
-export default function SearchBar() {
+export default function SearchBar({ onPlay }: Props) {
   const [q, setQ] = useState("");
   const dq = useDebounced(q);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchItem[]>([]);
-  const player = usePlayer();
 
   useEffect(() => {
     const run = async () => {
@@ -38,6 +39,8 @@ export default function SearchBar() {
         const r = await fetch(`/api/search?q=${encodeURIComponent(dq)}&limit=25`);
         const json = await r.json();
         setResults(json.items ?? []);
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
@@ -62,27 +65,30 @@ export default function SearchBar() {
       {empty && <div className="text-sm text-slate-400">Nessun risultato per “{dq}”.</div>}
 
       <div className="space-y-1 max-h-[50vh] overflow-auto pr-1">
-        {results.map((t) => (
-          <div
-            key={`${t.source}:${t.id}`}
-            className="flex items-center gap-3 p-2 rounded hover:bg-slate-800 cursor-pointer"
-            onClick={() => player.load({
-              id: `${t.source}:${t.id}`,
-              title: t.title,
-              artist: t.artist,
-              cover: t.cover,
-              url: t.url,
-              duration: t.duration,
-            }, true)}
-          >
-            <img src={t.cover} alt="" className="h-10 w-10 rounded object-cover" />
-            <div className="min-w-0">
-              <div className="truncate">{t.title}</div>
-              <div className="text-xs text-slate-400 truncate">{t.artist}</div>
+        {results.map((t) => {
+          const track: Track = {
+            id: `jamendo:${t.id}`,
+            title: t.title,
+            artist: t.artist,
+            cover: t.cover,
+            url: t.url,
+            duration: t.duration,
+          };
+          return (
+            <div
+              key={track.id}
+              className="flex items-center gap-3 p-2 rounded hover:bg-slate-800 cursor-pointer"
+              onClick={() => onPlay(track)}  // 👈 passa il brano alla page
+            >
+              <img src={t.cover} alt="" className="h-10 w-10 rounded object-cover" />
+              <div className="min-w-0">
+                <div className="truncate">{t.title}</div>
+                <div className="text-xs text-slate-400 truncate">{t.artist}</div>
+              </div>
+              <div className="ml-auto text-xs text-slate-500">Jamendo</div>
             </div>
-            <div className="ml-auto text-xs text-slate-500">Jamendo</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

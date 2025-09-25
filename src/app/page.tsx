@@ -1,5 +1,5 @@
 'use client';
-
+import SearchBar from "@/components/search/SearchBar";
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -23,6 +23,14 @@ import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/u
 import { formatDuration } from '@/lib/utils';
 
 export default function HomePage() {
+  const handlePlayFromSearch = (track: Track) => {
+  // setti il brano corrente
+  setCurrentTrack(track);
+
+  // se hai una queue, opzionale: setQueue([...])
+  // avvia la riproduzione usando il tuo stato playback esistente
+  setPlaybackState((s) => ({ ...s, isPlaying: true, currentTime: 0, duration: track.duration ?? 0 }));
+};
   const [tracks, setTracks] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [recommendations, setRecommendations] = useState<Track[]>([]);
@@ -172,6 +180,7 @@ export default function HomePage() {
   }
 
   return (
+    
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Onboarding */}
       {showOnboarding && (
@@ -179,9 +188,13 @@ export default function HomePage() {
           isOpen={showOnboarding}
           onComplete={handleOnboardingComplete}
           onSkip={handleOnboardingSkip}
+          
         />
       )}
-
+<section className="mt-6">
+  <h2 className="text-lg font-semibold mb-2">Search</h2>
+  <SearchBar onPlay={handlePlayFromSearch} />
+</section>
       {/* Main Content */}
       <div className="pb-20">
         {/* Hero Section */}
